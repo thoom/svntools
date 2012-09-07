@@ -1,7 +1,7 @@
 SVN Tools
 =========
 
-Scripts to help manage an SVN repository
+Scripts to help manage an SVN repository.
 
 Scripts
 -------
@@ -22,9 +22,9 @@ Edit the base variable in the file to point to your SVN repository. Future versi
 	--old XXXX		The old branch that should be compared against. (i.e. --old sprint8). If missing, assumes trunk.
 	--new XXXX		The new branch that should be compared against. (i.e. --new sprint8-stage). If missing, assumes trunk.
 	--file XXXX		A file that should be compared (i.e. web/index.php). Sets --details flag automatically.
-	--folder XXXX		A folder that should be compared (i.e. web/). Never sets --details flag.
+	--folder XXXX	A folder that should be compared (i.e. web/). Never sets --details flag.
 	--sub XXXX		A file (or folder) that should be compared (i.e. web/). 
-				If the param has a trailing forward slash, it is assumed that it is a folder. Otherwise it sets --details flag automatically.
+					If the param has a trailing forward slash, it is assumed that it is a folder. Otherwise it sets --details flag automatically.
 	--details		Get the diff details instead of summary of all the changes.
 	--summary		Force summary mode.
 	
