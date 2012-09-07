@@ -1,0 +1,150 @@
+#!/usr/bin/env python
+
+import sys, os, subprocess
+
+def svndiff(args):
+  old = oTag = new = nTag = page = param = ''
+  details = sumforce = False
+  summary = '--summarize'
+  base = '__SVN_REPOSITORY___'
+  
+  for item in args:
+    try:
+      ['--old', '--new', '--sub', '--file', '--folder'].index(item)
+      param = item[2:]
+    except ValueError:
+      if item == '--details':
+        details = True
+      elif item == '--summary':
+        sumforce = True
+      else:
+        if param == 'old':
+          old = item
+        elif param == 'new':
+          new = item
+        elif param == 'sub':
+          page = item
+          if item[-1:] != '/':
+            details = True
+        elif param == 'file':
+          page = item
+          details = True
+        elif param == 'folder':
+          page = item
+      
+      param = ''
+    
+  if old == '' or old == 'trunk':
+    oTag = ''
+    old = 'trunk/'
+  else:
+    oTag = old + "/"
+    old = "branches/"
+    
+  if new == '' or new == 'trunk':
+    nTag = ''
+    new = 'trunk/'
+  else:
+    nTag = new + '/'
+    new = 'branches/'
+    
+  if details == True:
+    summary = ''
+    
+  if sumforce == True:
+    summary = '--summarize'
+    
+  command = "svn diff %(b)s%(o)s%(ot)s%(p)s %(b)s%(n)s%(nt)s%(p)s %(sum)s" %\
+    { 'b': base, 'o': old, 'ot': oTag, 'p': page, 'n': new, 'nt': nTag, 'sum': summary }
+     
+  head = "SVN diff %(sum)s for %(o)s%(ot)s%(p)s to %(n)s%(nt)s%(p)s" % { 'sum': 'details' if summary == '' else 'summary', 'o': old, 'ot': oTag, 'p': page, 'n': new, 'nt': nTag }
+  print "\n+%(l)s+\n|%(s)s|\n| %(h)s |\n|%(s)s|\n+%(l)s+" % {'l': '=' * (len(head) + 2), 's': ' ' * (len(head) + 2), 'h': head }
+    
+  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+  if summary == '--summarize':
+    modified = [];
+    added = [];
+    deleted = [];
+    for line in p.stdout.readlines():
+      type = line[:1]
+      file = line[1:].strip().replace(base + old + oTag, '')
+      
+      if type == 'M':
+        modified.append(file)
+      elif type == 'D':
+        deleted.append(file)
+      elif type == 'A':
+        added.append(file)
+
+    if len(added) == 0 and len(modified) == 0 and len(deleted) == 0:
+      print "\nNo differences found"
+    else:	    
+      if len(modified) > 0:
+        modified.sort()
+        print "\nModified\n--------\n" + "\n".join(modified)
+  
+      if len(added) > 0:
+        added.sort()
+        header = 'Missing from %(o)s%(ot)s' % { 'o': old, 'ot': oTag }
+        print "\n%(h)s\n%(l)s\n" % {'h': header, 'l': '-' * len(header) } + "\n".join(added)
+
+      if len(deleted) > 0:
+        deleted.sort()
+        header = 'Missing from %(n)s%(nt)s' % { 'n': new, 'nt': nTag } 
+        print "\n%(h)s\n%(l)s\n" % {'h': header, 'l': '-' * len(header) } + "\n".join(deleted)
+  else:
+    print ""
+    for line in p.stdout.readlines():
+      print line,
+      
+  print ""
+
+
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    sys.argv.pop(0)
+    svndiff(sys.argv)
+  else:
+    print'''
+svndiff help
+------------
+
+param			description
+-----			-----------
+--old XXXX		The old branch that should be compared against. (i.e. --old sprint8). If missing, assumes trunk.
+--new XXXX		The new branch that should be compared against. (i.e. --new sprint8-stage). If missing, assumes trunk.
+--file XXXX		A file that should be compared (i.e. web/index.php). Sets --details flag automatically.
+--folder XXXX		A folder that should be compared (i.e. web/). Never sets --details flag.
+--sub XXXX		A file (or folder) that should be compared (i.e. web/). 
+			If the param has a trailing forward slash, it is assumed that it is a folder. Otherwise it sets --details flag automatically.
+--details		Get the diff details instead of summary of all the changes.
+--summary		Force summary mode.
+
+examples
+--------
+To get a summary of changes between branches:
+svndiff --old sprint9 --new sprint10
+
+To get detailed changes for all files between branches:
+svndiff --old sprint9 --new sprint10 --details
+
+To get a summary of changes between the trunk and a branch:
+svndiff --new sprint9
+svndiff --old trunk --new sprint9
+
+To get detailed changes for a file between branches:
+svndiff --old sprint9 --new sprint10 --file lib/class/MyClass.php
+svndiff --old sprint9 --new sprint10 --sub lib/class/MyClass.php
+
+To get a summary of changes between a sub folder between branches:
+svndiff --old sprint9 --new sprint10 --folder lib/class
+svndiff --old sprint9 --new sprint10 --folder lib/class/
+svndiff --old sprint9 --new sprint10 --sub lib/class/
+
+To get a detailed view of changes between a sub folder between branches:
+svndiff --old sprint9 --new sprint10 --folder lib/class --details
+svndiff --old sprint9 --new sprint10 --folder lib/class/ --details
+svndiff --old sprint9 --new sprint10 --sub lib/class/ --details
+svndiff --old sprint9 --new sprint10 --sub lib/class (notice the lack of trailing forward slash)
+    '''
+    
