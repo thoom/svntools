@@ -54,7 +54,7 @@ def svndiff(args):
   if sumforce == True:
     summary = '--summarize'
     
-  command = "svn diff %(b)s%(o)s%(ot)s%(p)s %(b)s%(n)s%(nt)s%(p)s %(sum)s" %\
+  command = "svn diff -x -w %(b)s%(o)s%(ot)s%(p)s %(b)s%(n)s%(nt)s%(p)s %(sum)s" %\
     { 'b': base, 'o': old, 'ot': oTag, 'p': page, 'n': new, 'nt': nTag, 'sum': summary }
      
   head = "SVN diff %(sum)s for %(o)s%(ot)s%(p)s to %(n)s%(nt)s%(p)s" % { 'sum': 'details' if summary == '' else 'summary', 'o': old, 'ot': oTag, 'p': page, 'n': new, 'nt': nTag }
