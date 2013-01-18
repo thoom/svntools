@@ -7,9 +7,11 @@ Each script is stored in an appropriate folder based off of the language the scr
 Ruby Scripts
 ------------
 
-All of the ruby scripts utilize a `.svntools.yml` file in your user's home directory. Create a default section with a base key pointing to the root of your SVN repository (the directory your trunk resides in). You can also set up additional repositories by creating additional sections.
+All of the ruby scripts utilize a `.svntools.yml` file. If this file exists in the folder you call the script from, it will use that file (so you could keep a `.svntools.yml` file in each of your working directories); otherwise it will look for the file in your user's home directory. 
 
-### ~/.svntools.yml
+In the file, create a default section with a base key pointing to the root of your SVN repository (the directory your trunk resides in). You can also set up additional repositories by creating additional sections.
+
+### .svntools.yml
    
     default:
       base: http://my-svn-repository
