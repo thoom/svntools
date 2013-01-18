@@ -1,0 +1,66 @@
+#! /usr/bin/env ruby
+
+def svn_merge(args, repository)
+  base   = repository[:base]
+  trunk  = repository[:trunk]
+  branch = repository[:branch]
+
+  if args.length == 0 || args[0] == trunk
+    switch = trunk
+  else
+    switch = "#{ branch }/#{ args[0] }"
+  end
+
+  print "Do you want to merge the working copy with #{ switch }? [yN] "
+  result = STDIN.gets
+
+  unless %w(Y YES YEP YEAH YESSIR).index result.strip.upcase
+    puts "Exiting without merging as requested"
+    exit
+  end
+
+  head = "SVN merge with #{ switch }"
+  l    = '=' * (head.length + 2)
+  s    = ' ' * (head.length + 2)
+  puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+\n"
+
+  puts `svn merge #{ base }#{ switch } . 2>&1`
+end
+
+def svn_merge_help command = 'svnmerge'
+  header = "#{ command } help"
+  l      = '-' * header.length
+  h      = "#{ header }\n#{ l }"
+  puts <<-HELP
+
+#{ h }
+
+Merges the current working copy with another branch.
+
+param             description
+-----             -----------
+-p (--repository) XXXX	Use the repository defined in the config file.
+
+examples
+--------
+#{ command } trunk      Merges trunk on to this working copy
+#{ command } sprint17   Merges sprint17 on to this working copy
+
+  HELP
+end
+
+
+if __FILE__ == $0
+  unless ARGV.empty?
+    load File.dirname(__FILE__) + '/svntools'
+
+    result     = parse_args ARGV
+    args       = result[:args]
+    repository = result[:repository]
+
+    svn_merge(args, repository)
+    exit
+  end
+
+  svn_merge_help
+end

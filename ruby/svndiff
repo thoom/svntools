@@ -1,22 +1,15 @@
 #! /usr/bin/env ruby
 
-def svndiff(args, config)
-  colorizer = old = otag = new = ntag = page = param = revision = repository = ''
+def svn_diff(args, repository)
+  colorizer = old = otag = new = ntag = page = param = revision = ''
   details   = sumforce = false
   summary   = '--summarize'
 
-  if config.has_key? 'default'
-    default = config['default']
-    unless default.has_key? 'base'
-      raise "Default configuration missing 'base' key"
-    end
+  base   = repository[:base]
+  trunk  = repository[:trunk]
+  branch = repository[:branch]
 
-    base   = default['base']
-    trunk  = (default.has_key? 'trunk') ? default['trunk'] : 'trunk'
-    branch = (default.has_key? 'branch') ? default['branch'] : 'branches'
-  end
-
-  params = {'-o' => 'old', '-n' => 'new', '-s' => 'sub', '-f' => 'file', '-d' => 'folder', '-r' => 'revision', '-c' => 'colorizer', '-p' => 'repository'}
+  params = {'-o' => 'old', '-n' => 'new', '-s' => 'sub', '-f' => 'file', '-d' => 'folder', '-r' => 'revision', '-c' => 'colorizer'}
 
   args.each do |item|
     if params.has_key? item
@@ -48,15 +41,6 @@ def svndiff(args, config)
             old = item
           when 'new'
             new = item
-          when 'repository'
-            unless config.has_key? item
-              raise "Configuration file missing repository #{ item }"
-            end
-
-            repository = config[item]
-            base = (repository.has_key? 'base') ?  repository['base'] : base
-            trunk = (repository.has_key? 'trunk') ? repository['trunk'] : trunk
-            branch = (repository.has_key? 'branch') ? repository['branch'] : branch
           when 'revision'
             revision = item
             details  = true
@@ -201,31 +185,15 @@ def svndiff(args, config)
   end
 end
 
-
-if __FILE__ == $0
-  $:.unshift File.join(File.dirname(__FILE__), '..')
-  unless ARGV.empty?
-    require 'yaml'
-
-    if File.exists? '.svndiff.yml'
-      file = '.svndiff.yml'
-    else
-      file = File.expand_path '~/.svndiff.yml'
-      unless File.exists? file
-        raise "Configuration file #{ file } not found"
-      end
-    end
-
-    config = YAML.load_file file
-    svndiff(ARGV, config)
-    exit
-  end
-
+def svn_diff_help command = 'svndiff'
+  header = "#{ command } help"
+  l      = '-' * header.length
+  h      = "#{ header }\n#{ l }"
   puts <<-HELP
-svndiff help
-------------
-To use, you need to set up a .svndiff.yml config file in your home directory.
 
+#{ h }
+
+Compares differences between revisions or branches and the trunk.
 
 param			description
 -----			-----------
@@ -244,41 +212,57 @@ param			description
 examples
 --------
 To get a summary of changes between branches:
-svndiff -o sprint9 -n sprint10
-svndiff --old sprint9 --new sprint10
+#{ command } -o sprint9 -n sprint10
+#{ command } --old sprint9 --new sprint10
 
 To get detailed changes for all files between branches:
-svndiff -o sprint9 -n sprint10 --details
-svndiff --old sprint9 --new sprint10 --details
+#{ command } -o sprint9 -n sprint10 --details
+#{ command } --old sprint9 --new sprint10 --details
 
 To get a summary of changes between the trunk and a branch:
-svndiff --new sprint9
-svndiff --old trunk --new sprint9
+#{ command } --new sprint9
+#{ command } --old trunk --new sprint9
 
 To get detailed changes for a file between branches:
-svndiff --old sprint9 --new sprint10 --file lib/class/MyClass.php
-svndiff --old sprint9 --new sprint10 --sub lib/class/MyClass.php
+#{ command } --old sprint9 --new sprint10 --file lib/class/MyClass.php
+#{ command } --old sprint9 --new sprint10 --sub lib/class/MyClass.php
 
 To get a summary of changes between a sub folder between branches:
-svndiff --old sprint9 --new sprint10 --folder lib/class
-svndiff --old sprint9 --new sprint10 --folder lib/class/
-svndiff --old sprint9 --new sprint10 --sub lib/class/
+#{ command } --old sprint9 --new sprint10 --folder lib/class
+#{ command } --old sprint9 --new sprint10 --folder lib/class/
+#{ command } --old sprint9 --new sprint10 --sub lib/class/
 
 To get a detailed view of changes between a sub folder between branches:
-svndiff --old sprint9 --new sprint10 --folder lib/class --details
-svndiff --old sprint9 --new sprint10 --folder lib/class/ --details
-svndiff --old sprint9 --new sprint10 --sub lib/class/ --details
-svndiff --old sprint9 --new sprint10 --sub lib/class (notice the lack of trailing forward slash)
+#{ command } --old sprint9 --new sprint10 --folder lib/class --details
+#{ command } --old sprint9 --new sprint10 --folder lib/class/ --details
+#{ command } --old sprint9 --new sprint10 --sub lib/class/ --details
+#{ command } --old sprint9 --new sprint10 --sub lib/class (notice the lack of trailing forward slash)
 
 To get a detailed view of changes between sequential revisions:
-svndiff -r 10301 (same as svndiff -r 10300:10301)
-svndiff --revision 10301
+#{ command } -r 10301 (same as #{ command } -r 10300:10301)
+#{ command } --revision 10301
 
 To get a detailed view of changes between revisions:
-svndiff -r 10210:10301
-svndiff --revision 10210:10301
+#{ command } -r 10210:10301
+#{ command } --revision 10210:10301
 
 To get a summary of difference between revisions:
-svndiff --revision 10301 --summary
+#{ command } --revision 10301 --summary
   HELP
+end
+
+
+if __FILE__ == $0
+  unless ARGV.empty?
+    load File.dirname(__FILE__) + '/svntools'
+
+    result     = parse_args ARGV
+    args       = result[:args]
+    repository = result[:repository]
+
+    svn_diff(args, repository)
+    exit
+  end
+
+  svn_diff_help
 end

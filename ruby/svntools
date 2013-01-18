@@ -1,0 +1,128 @@
+#! /usr/bin/env ruby
+
+def get_config
+  require "yaml"
+  file_name = '.svntools.yml'
+  if File.exists? file_name
+    file = file_name
+  else
+    file = File.expand_path "~/#{ file_name }"
+    unless File.exists? file
+      raise "Configuration file #{ file } not found"
+    end
+  end
+
+  YAML.load_file file
+end
+
+def parse_args args
+  repository_name = 'default'
+  index           = args.index '--repository'
+  unless index
+    index = args.index '-p'
+  end
+
+  if index && args.length > index + 1
+    repository_name = args[index + 1]
+
+    args.delete_at index
+    args.delete_at index
+  end
+
+  config = get_config
+  if config.has_key? 'default'
+    default = config['default']
+    unless default.has_key? 'base'
+      raise "Default configuration missing 'base' key"
+    end
+
+    c_base   = default['base']
+    c_trunk  = (default.has_key? 'trunk') ? default['trunk'] : 'trunk'
+    c_branch = (default.has_key? 'branch') ? default['branch'] : 'branches'
+  end
+
+  if repository_name != 'default'
+    unless config.has_key? repository_name
+      raise "Configuration file missing repository '#{ repository_name }'"
+    end
+
+    repository = config[repository_name]
+    if repository.has_key? 'base'
+      c_base = repository['base']
+    end
+    if repository.has_key? 'trunk'
+      c_trunk = repository['trunk']
+    end
+    if repository.has_key? 'branch'
+      c_branch = repository['branch']
+    end
+  end
+
+  {:args => args, :repository => {:base => c_base, :trunk => c_trunk, :branch => c_branch}}
+end
+
+def svn_tools_help
+  puts <<-HELP
+svntools help
+-------------
+
+command           description
+-------           -----------
+help {command}    brings up help documentation for the specific command
+diff              provides diff between revisions, branches, trunk, etc
+switch            switch the svn repository for the current working copy
+merge             merge the repository on to the working copy
+
+param             description
+-----             -----------
+-p (--repository) XXXX	Use the repository defined in the config file.
+
+
+examples
+--------
+svntools diff => same as svndiff
+svntools help diff => displays the svndiff help
+
+  HELP
+end
+
+
+if __FILE__ == $0
+  unless ARGV.empty?
+    load File.dirname(__FILE__) + '/svndiff'
+    load File.dirname(__FILE__) +'/svnswitch'
+    load File.dirname(__FILE__) +'/svnmerge'
+
+    if ARGV[0] == 'help'
+      case ARGV[1]
+        when 'diff'
+          svn_diff_help 'svntools diff'
+        when 'switch'
+          svn_switch_help 'svntools switch'
+        when 'merge'
+          svn_merge_help 'svntools merge'
+        else
+          svn_tools_help
+      end
+    elsif %w(diff switch merge).index ARGV[0]
+      result     = parse_args ARGV
+      args       = result[:args]
+      repository = result[:repository]
+
+      case args.shift
+        when 'diff'
+          svn_diff(args, repository)
+        when 'merge'
+          svn_merge(args, repository)
+        when 'switch'
+          svn_switch(args, repository)
+      end
+
+    else
+      raise "Invalid argument #{ ARGV[0] }. Execute " + __FILE__ + " without parameters to see accepted arguments"
+    end
+    exit
+  end
+
+  svn_tools_help
+end

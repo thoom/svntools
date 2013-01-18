@@ -1,0 +1,66 @@
+#! /usr/bin/env ruby
+
+def svn_switch(args, repository)
+  base   = repository[:base]
+  trunk  = repository[:trunk]
+  branch = repository[:branch]
+
+  if args.length == 0 || args[0] == trunk
+    switch = trunk
+  else
+    switch = "#{ branch }/#{ args[0] }"
+  end
+
+  print "Do you want to switch the working copy to #{ switch }? [yN] "
+  result = STDIN.gets
+
+  unless %w(Y YES YEP YEAH YESSIR).index result.strip.upcase
+    puts "Exiting without switching as requested"
+    exit
+  end
+
+  head = "SVN switch to #{ switch }"
+  l    = '=' * (head.length + 2)
+  s    = ' ' * (head.length + 2)
+  puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+\n"
+
+  puts `svn switch #{ base }#{ switch } 2>&1`
+end
+
+def svn_switch_help command = 'svnswitch'
+  header = "#{ command } help"
+  l      = '-' * header.length
+  h      = "#{ header }\n#{ l }"
+  puts <<-HELP
+
+#{ h }
+
+Switches the current SVN repository to another branch.
+
+param             description
+-----             -----------
+-p (--repository) XXXX	Use the repository defined in the config file.
+
+examples
+--------
+#{ command } trunk      Switches the working copy to the trunk
+#{ command } sprint17   Switches the working copy to sprint17
+
+  HELP
+end
+
+
+if __FILE__ == $0
+  unless ARGV.empty?
+    load File.dirname(__FILE__) + '/svntools'
+
+    result     = parse_args ARGV
+    args       = result[:args]
+    repository = result[:repository]
+
+    svn_switch(args, repository)
+    exit
+  end
+
+  svn_switch_help
+end
