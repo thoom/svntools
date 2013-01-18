@@ -1,0 +1,284 @@
+#! /usr/bin/env ruby
+
+def svndiff(args, config)
+  colorizer = old = otag = new = ntag = page = param = revision = repository = ''
+  details   = sumforce = false
+  summary   = '--summarize'
+
+  if config.has_key? 'default'
+    default = config['default']
+    unless default.has_key? 'base'
+      raise "Default configuration missing 'base' key"
+    end
+
+    base   = default['base']
+    trunk  = (default.has_key? 'trunk') ? default['trunk'] : 'trunk'
+    branch = (default.has_key? 'branch') ? default['branch'] : 'branches'
+  end
+
+  params = {'-o' => 'old', '-n' => 'new', '-s' => 'sub', '-f' => 'file', '-d' => 'folder', '-r' => 'revision', '-c' => 'colorizer', '-p' => 'repository'}
+
+  args.each do |item|
+    if params.has_key? item
+      param = params[item]
+      next
+    end
+
+    val = item[2..-1]
+    if params.has_value? val
+      param = val
+      next
+    end
+
+    case item
+      when '--details'
+        details = true
+      when '--summary'
+        sumforce = true
+      else
+        case param
+          when 'colorizer'
+            colorizer = item
+          when 'file'
+            page    = item
+            details = true
+          when 'folder'
+            page = item
+          when 'old'
+            old = item
+          when 'new'
+            new = item
+          when 'repository'
+            unless config.has_key? item
+              raise "Configuration file missing repository #{ item }"
+            end
+
+            repository = config[item]
+            base = (repository.has_key? 'base') ?  repository['base'] : base
+            trunk = (repository.has_key? 'trunk') ? repository['trunk'] : trunk
+            branch = (repository.has_key? 'branch') ? repository['branch'] : branch
+          when 'revision'
+            revision = item
+            details  = true
+          when 'sub'
+            page = item
+            if item[-1, 1] != '/'
+              details = true
+            end
+          else
+            #do something?
+        end
+    end
+
+    param = ""
+  end
+
+  if revision.empty?
+    if old.empty? || old == trunk
+      otag = ""
+      old  = "#{ trunk }/"
+    else
+      otag = "#{ old }/"
+      old  = "#{ branch }/"
+    end
+
+    if new.empty? || new == trunk
+      ntag = ""
+      new  = "#{ trunk }/"
+    else
+      ntag = "#{ new }/"
+      new  = "#{ branch }/"
+    end
+
+    path  = "#{ base }#{ old }#{ otag }#{ page } #{ base }#{ new }#{ ntag }#{ page }"
+    hpath = "#{ old }#{ otag }#{ page } #{ new }#{ ntag }#{ page }"
+  else
+    unless revision.include? ':'
+      revision = (revision.to_i - 1).to_s + ':' + revision
+    end
+
+    path  = "-r #{ revision } #{ base }"
+    hpath = "revision #{ revision }"
+  end
+
+  if details == true && sumforce == false
+    summary = ''
+
+    if colorizer.empty?
+      %w(diffc colordiff).each do |colorer|
+        output = `which #{ colorer } 2>&1`
+        if output.empty?
+          next
+        end
+
+        summary = "| #{ colorer }"
+        break
+      end
+    else
+      output = `which #{ colorizer } 2>&1`
+      unless output.empty?
+        summary = "| #{ colorizer }"
+      end
+    end
+  end
+
+  if sumforce
+    summary = '--summarize'
+  end
+
+  command = "svn diff -x -w #{ path } #{ summary }"
+
+  head = 'SVN diff ' + (summary.empty? ? 'details' : 'summary') + " for #{ hpath }"
+  l    = '=' * (head.length + 2)
+  s    = ' ' * (head.length + 2)
+  puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+"
+
+  output = `#{ command } 2>&1`
+  if summary != '--summarize'
+    puts "\n" + output
+    exit
+  end
+
+  added     = []
+  deleted   = []
+  modified  = []
+  mtype     = %w(M D A)
+  pmodified = []
+  maxlen    = 0
+
+  output.each_line do |line|
+    type = line[0, 1]
+    prop = line[1, 1]
+    file = line[2..-1].strip.sub(base + old + otag, '')
+
+    case type
+      when 'M'
+        modified << file
+      when 'D'
+        deleted << file
+      when 'A'
+        added << file
+      else
+        #do something?
+    end
+
+    if prop == 'M'
+      pmodified << file
+    end
+
+    if maxlen < file.length
+      maxlen = file.length
+    end
+  end
+
+  if added.empty? && modified.empty? && deleted.empty?
+    puts 'No differences found'
+  else
+    l = '-' * (maxlen + 1)
+
+    unless modified.empty?
+      modified.sort!
+      puts "\nModified\n#{ l }\n" + modified.join("\n")
+    end
+
+    unless added.empty?
+      added.sort!
+      header = "Missing from #{ old }#{ otag }"
+      puts "\n#{ header }\n#{ l }\n" + added.join("\n")
+    end
+
+    unless deleted.empty?
+      deleted.sort!
+      header = "Missing from #{ new }#{ ntag }"
+      puts "\n#{ header }\n#{ l }\n" + deleted.join("\n")
+    end
+
+    unless pmodified.empty?
+      pmodified.sort!
+      header = 'SVN properties changed'
+      puts "\n#{ header }\n#{ l }\n" + pmodified.join("\n")
+    end
+  end
+end
+
+
+if __FILE__ == $0
+  $:.unshift File.join(File.dirname(__FILE__), '..')
+  unless ARGV.empty?
+    require 'yaml'
+
+    if File.exists? '.svndiff.yml'
+      file = '.svndiff.yml'
+    else
+      file = File.expand_path '~/.svndiff.yml'
+      unless File.exists? file
+        raise "Configuration file #{ file } not found"
+      end
+    end
+
+    config = YAML.load_file file
+    svndiff(ARGV, config)
+    exit
+  end
+
+  puts <<-HELP
+svndiff help
+------------
+To use, you need to set up a .svndiff.yml config file in your home directory.
+
+
+param			description
+-----			-----------
+-c (--colorizer) XXXX	A diff coloring app like diffc, colordiff. If one of these exist, it will choose automatically. If specified, it will use the specified app.
+-d (--folder) XXXX	A folder that should be compared (i.e. web/). Never sets --details flag.
+-f (--file) XXXX	A file that should be compared (i.e. web/index.php). Sets --details flag automatically.
+-o (--old) XXXX		The old branch that should be compared against. (i.e. --old sprint8). If missing, assumes trunk.
+-n (--new) XXXX		The new branch that should be compared against. (i.e. --new sprint8-stage). If missing, assumes trunk.
+-p (--repository) XXXX  Use the repository defined in the config file.
+-r (--revision) XXXX	Compare the differences between revisions rather than branches (i.e. -r 10301 or -r 10200:10301). Sets the --details flag automatically.
+-s (--sub) XXXX		A file (or folder) that should be compared (i.e. web/).
+			If the param has a trailing forward slash, it is assumed that it is a folder. Otherwise it sets --details flag automatically.
+--details		Get the diff details instead of summary of all the changes.
+--summary		Force summary mode.
+
+examples
+--------
+To get a summary of changes between branches:
+svndiff -o sprint9 -n sprint10
+svndiff --old sprint9 --new sprint10
+
+To get detailed changes for all files between branches:
+svndiff -o sprint9 -n sprint10 --details
+svndiff --old sprint9 --new sprint10 --details
+
+To get a summary of changes between the trunk and a branch:
+svndiff --new sprint9
+svndiff --old trunk --new sprint9
+
+To get detailed changes for a file between branches:
+svndiff --old sprint9 --new sprint10 --file lib/class/MyClass.php
+svndiff --old sprint9 --new sprint10 --sub lib/class/MyClass.php
+
+To get a summary of changes between a sub folder between branches:
+svndiff --old sprint9 --new sprint10 --folder lib/class
+svndiff --old sprint9 --new sprint10 --folder lib/class/
+svndiff --old sprint9 --new sprint10 --sub lib/class/
+
+To get a detailed view of changes between a sub folder between branches:
+svndiff --old sprint9 --new sprint10 --folder lib/class --details
+svndiff --old sprint9 --new sprint10 --folder lib/class/ --details
+svndiff --old sprint9 --new sprint10 --sub lib/class/ --details
+svndiff --old sprint9 --new sprint10 --sub lib/class (notice the lack of trailing forward slash)
+
+To get a detailed view of changes between sequential revisions:
+svndiff -r 10301 (same as svndiff -r 10300:10301)
+svndiff --revision 10301
+
+To get a detailed view of changes between revisions:
+svndiff -r 10210:10301
+svndiff --revision 10210:10301
+
+To get a summary of difference between revisions:
+svndiff --revision 10301 --summary
+  HELP
+end
