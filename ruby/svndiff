@@ -1,13 +1,26 @@
 #! /usr/bin/env ruby
 
 def svn_diff(args, repository)
-  colorizer = old = otag = new = ntag = page = param = revision = ''
-  details   = sumforce = debug = false
+  colorizer = ''
+  old       = ''
+  otag      = ''
+  new       = ''
+  ntag      = ''
+  page      = ''
+  param     = ''
+  revision  = ''
+  details   = false
+  sumforce  = false
+  debug     = false
   summary   = '--summarize'
 
   base   = repository[:base]
   trunk  = repository[:trunk]
   branch = repository[:branch]
+
+  if get_config.has_key? 'colorizer'
+    colorizer = get_config['colorizer']
+  end
 
   params = {'-o' => 'old', '-n' => 'new', '-s' => 'sub', '-f' => 'file', '-d' => 'folder', '-r' => 'revision', '-c' => 'colorizer'}
 

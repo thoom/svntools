@@ -1,7 +1,14 @@
 #! /usr/bin/env ruby
 
+$config = ''
+
 def get_config
-  require "yaml"
+  unless $config.empty?
+    return $config
+  end
+
+  require 'yaml'
+
   file_name = '.svntools.yml'
   if File.exists? file_name
     file = file_name
@@ -12,10 +19,11 @@ def get_config
     end
   end
 
-  YAML.load_file file
+  $config = YAML.load_file file
 end
 
 def parse_args args
+  args            = args.dup
   repository_name = 'default'
   index           = args.index '--repository'
   unless index
@@ -30,6 +38,11 @@ def parse_args args
   end
 
   config = get_config
+  unless config.has_key? 'repositories'
+    raise "Configuration missing repositories section"
+  end
+
+  config = config['repositories']
   if config.has_key? 'default'
     default = config['default']
     unless default.has_key? 'base'
@@ -58,7 +71,7 @@ def parse_args args
     end
   end
 
-  unless c_base[-1,1] == '/'
+  unless c_base[-1, 1] == '/'
     c_base += '/'
   end
 

@@ -13,10 +13,16 @@ In the file, create a default section with a base key pointing to the root of yo
 
 ### .svntools.yml
    
-    default:
-      base: http://my-svn-repository
-    another-repo:
-      base: http://another-svn-repository
+    colorizer: colordiff
+    repositories:
+      default:
+        base: http://my-svn-repository
+        trunk: trunk (default, so unnecessary)
+        branch: branch (default, so unnecessary)
+      another-repo:
+        base: http://another-svn-repository
+        trunk: trunk/my-app2
+        branch: branches/my-app2
 
 ### svntools
 

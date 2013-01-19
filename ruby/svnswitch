@@ -26,11 +26,11 @@ def svn_switch(args, repository)
   s    = ' ' * (head.length + 2)
   puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+\n"
 
-
   command = "svn switch #{ base }#{ switch }"
   if debug
     puts command
   end
+
   puts `#{ command } 2>&1`
 end
 

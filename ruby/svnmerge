@@ -5,13 +5,13 @@ def svn_merge(args, repository)
   trunk  = repository[:trunk]
   branch = repository[:branch]
 
+  debug = (args.index '--debug') ? true : false
+
   if args.length == 0 || args[0] == trunk
     switch = trunk
   else
     switch = "#{ branch }/#{ args[0] }"
   end
-
-  debug = (args.index '--debug') ? true : false
 
   print "Do you want to merge the working copy with #{ switch }? [yN] "
   result = STDIN.gets
@@ -48,7 +48,6 @@ param                   description
 -----                   -----------
 -p (--repository)	XXXX  Use the repository defined in the config file.
 --debug                 Prints various debug statements
-
 
 examples
 --------
