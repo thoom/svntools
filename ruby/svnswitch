@@ -5,6 +5,8 @@ def svn_switch(args, repository)
   trunk  = repository[:trunk]
   branch = repository[:branch]
 
+  debug = (args.index '--debug') ? true : false
+
   if args.length == 0 || args[0] == trunk
     switch = trunk
   else
@@ -24,7 +26,12 @@ def svn_switch(args, repository)
   s    = ' ' * (head.length + 2)
   puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+\n"
 
-  puts `svn switch #{ base }#{ switch } 2>&1`
+
+  command = "svn switch #{ base }#{ switch }"
+  if debug
+    puts command
+  end
+  puts `#{ command } 2>&1`
 end
 
 def svn_switch_help command = 'svnswitch'
@@ -37,9 +44,10 @@ def svn_switch_help command = 'svnswitch'
 
 Switches the current SVN repository to another branch.
 
-param             description
------             -----------
--p (--repository) XXXX	Use the repository defined in the config file.
+param                   description
+-----                   -----------
+-p (--repository)	XXXX  Use the repository defined in the config file.
+--debug                 Prints various debug statements
 
 examples
 --------

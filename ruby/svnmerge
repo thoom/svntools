@@ -11,6 +11,8 @@ def svn_merge(args, repository)
     switch = "#{ branch }/#{ args[0] }"
   end
 
+  debug = (args.index '--debug') ? true : false
+
   print "Do you want to merge the working copy with #{ switch }? [yN] "
   result = STDIN.gets
 
@@ -24,7 +26,12 @@ def svn_merge(args, repository)
   s    = ' ' * (head.length + 2)
   puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+\n"
 
-  puts `svn merge #{ base }#{ switch } . 2>&1`
+  command =  "svn merge #{ base }#{ switch } .";
+  if debug
+    puts command
+  end
+
+  puts `#{ command } 2>&1`
 end
 
 def svn_merge_help command = 'svnmerge'
@@ -37,9 +44,11 @@ def svn_merge_help command = 'svnmerge'
 
 Merges the current working copy with another branch.
 
-param             description
------             -----------
--p (--repository) XXXX	Use the repository defined in the config file.
+param                   description
+-----                   -----------
+-p (--repository)	XXXX  Use the repository defined in the config file.
+--debug                 Prints various debug statements
+
 
 examples
 --------

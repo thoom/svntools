@@ -24,22 +24,22 @@ This script is a container script for the others. If you'd rather use it than th
 
 To use:
 
-	command           description
-	-------           -----------
-	help {command}    brings up help documentation for the specific command
-	diff              provides diff between revisions, branches, trunk, etc
-	switch            switch the svn repository for the current working copy
-	merge             merge the repository on to the working copy
+	command				description
+	-------				-----------
+	help {command}		Brings up help documentation for the specific command
+	diff				Provides diff between revisions, branches, trunk, etc
+	switch				Switch the svn repository for the current working copy
+	merge				Merge the repository on to the working copy
 	
-	param             description
-	-----             -----------
+	param             		description
+	-----             		-----------
 	-p (--repository) XXXX	Use the repository defined in the config file.
-	
+	--debug					Prints various debug statements
 	
 	examples
 	--------
-	svntools diff => same as svndiff
-	svntools help diff => displays the svndiff help
+	svntools diff		Same as svndiff
+	svntools help diff	Displays the svndiff help
  
 
 ### svndiff
@@ -61,6 +61,8 @@ To use:
 	-r (--revision) XXXX	Compare the differences between revisions rather than branches (i.e. -r 10301 or -r 10200:10301). Sets the --details flag automatically.
 	-s (--sub) XXXX		A file (or folder) that should be compared (i.e. web/).
 				If the param has a trailing forward slash, it is assumed that it is a folder. Otherwise it sets --details flag automatically.
+	
+	--debug			Prints various debug statements
 	--details		Get the diff details instead of summary of all the changes.
 	--summary		Force summary mode.
 	
@@ -110,9 +112,11 @@ Merge a working copy with another repository
 
 To use:
 
-	param             description
-	-----             -----------
+	param					description
+	-----					-----------
 	-p (--repository) XXXX	Use the repository defined in the config file.
+	--debug					Prints various debug statements
+
 	
 	examples
 	--------
@@ -125,9 +129,10 @@ Switches the current SVN repository to another branch.
 
 To use:
 
-	param             description
-	-----             -----------
+	param					description
+	-----					-----------
 	-p (--repository) XXXX	Use the repository defined in the config file.
+	--debug					Prints various debug statements
 	
 	examples
 	--------

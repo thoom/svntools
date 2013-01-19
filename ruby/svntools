@@ -58,6 +58,10 @@ def parse_args args
     end
   end
 
+  unless c_base[-1,1] == '/'
+    c_base += '/'
+  end
+
   {:args => args, :repository => {:base => c_base, :trunk => c_trunk, :branch => c_branch}}
 end
 
@@ -73,9 +77,10 @@ diff              provides diff between revisions, branches, trunk, etc
 switch            switch the svn repository for the current working copy
 merge             merge the repository on to the working copy
 
-param             description
------             -----------
--p (--repository) XXXX	Use the repository defined in the config file.
+param                   description
+-----                   -----------
+-p (--repository)	XXXX  Use the repository defined in the config file.
+--debug                 Prints various debug statementss
 
 
 examples

@@ -2,7 +2,7 @@
 
 def svn_diff(args, repository)
   colorizer = old = otag = new = ntag = page = param = revision = ''
-  details   = sumforce = false
+  details   = sumforce = debug = false
   summary   = '--summarize'
 
   base   = repository[:base]
@@ -28,6 +28,8 @@ def svn_diff(args, repository)
         details = true
       when '--summary'
         sumforce = true
+      when '--debug'
+        debug = true
       else
         case param
           when 'colorizer'
@@ -116,6 +118,10 @@ def svn_diff(args, repository)
   l    = '=' * (head.length + 2)
   s    = ' ' * (head.length + 2)
   puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+"
+
+  if debug
+    puts command
+  end
 
   output = `#{ command } 2>&1`
   if summary != '--summarize'
@@ -206,6 +212,8 @@ param			description
 -r (--revision) XXXX	Compare the differences between revisions rather than branches (i.e. -r 10301 or -r 10200:10301). Sets the --details flag automatically.
 -s (--sub) XXXX		A file (or folder) that should be compared (i.e. web/).
 			If the param has a trailing forward slash, it is assumed that it is a folder. Otherwise it sets --details flag automatically.
+
+--debug			Prints various debug statements
 --details		Get the diff details instead of summary of all the changes.
 --summary		Force summary mode.
 
