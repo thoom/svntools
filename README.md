@@ -56,17 +56,17 @@ To color code the diffs, I recommend something like [diffc](https://code.google.
 
 To use:
    
-	param			description
-	-----			-----------
+	param					description
+	-----					-----------
 	-c (--colorizer) XXXX	A diff coloring app like diffc, colordiff. If one of these exist, it will choose automatically. If specified, it will use the specified app.
-	-d (--folder) XXXX	A folder that should be compared (i.e. web/). Never sets --details flag.
-	-f (--file) XXXX	A file that should be compared (i.e. web/index.php). Sets --details flag automatically.
-	-o (--old) XXXX		The old branch that should be compared against. (i.e. --old sprint8). If missing, assumes trunk.
-	-n (--new) XXXX		The new branch that should be compared against. (i.e. --new sprint8-stage). If missing, assumes trunk.
+	-d (--folder) XXXX		A folder that should be compared (i.e. web/). Never sets --details flag.
+	-f (--file) XXXX		A file that should be compared (i.e. web/index.php). Sets --details flag automatically.
+	-o (--old) XXXX			The old branch that should be compared against. (i.e. --old sprint8). If missing, assumes trunk.
+	-n (--new) XXXX			The new branch that should be compared against. (i.e. --new sprint8-stage). If missing, assumes trunk.
 	-p (--repository) XXXX	Use the repository defined in the config file.
 	-r (--revision) XXXX	Compare the differences between revisions rather than branches (i.e. -r 10301 or -r 10200:10301). Sets the --details flag automatically.
-	-s (--sub) XXXX		A file (or folder) that should be compared (i.e. web/).
-				If the param has a trailing forward slash, it is assumed that it is a folder. Otherwise it sets --details flag automatically.
+	-s (--sub) XXXX			A file (or folder) that should be compared (i.e. web/).
+							If the param has a trailing forward slash, it is assumed that it is a folder. Otherwise it sets --details flag automatically.
 	
 	--debug			Prints various debug statements
 	--details		Get the diff details instead of summary of all the changes.
