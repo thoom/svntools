@@ -58,7 +58,6 @@ def svn_diff(args, repository)
             new = item
           when 'revision'
             revision = item
-            details  = true
           when 'sub'
             page = item
             if item[-1, 1] != '/'
@@ -134,6 +133,32 @@ def svn_diff(args, repository)
 
   if debug
     puts command
+  end
+
+  unless revision.empty?
+    rev    = revision[revision.index(":")+1..-1]
+    output = `svn log -r #{ rev } #{ base }`
+
+    @user = ''
+    @date = ''
+    @line = ''
+    output.each_line do |line|
+      if line[0, 1] == '-'
+        # do nothing
+      elsif line.include? "r#{ rev }"
+        trash, user, date, trash = line.split('|')
+
+        @user = user.strip
+        @date = DateTime.parse date[0..date.index('(')-1].strip
+      else
+        @line += line
+      end
+    end
+
+    head = "Last commit message by #@user on " + @date.strftime("%b %d, %Y %I:%M %p")
+    l    = '-' * head.length
+
+    puts "\n#{ head }\n#{ l }#@line\n"
   end
 
   output = `#{ command } 2>&1`
@@ -263,12 +288,12 @@ To get a detailed view of changes between sequential revisions:
 #{ command } -r 10301 (same as #{ command } -r 10300:10301)
 #{ command } --revision 10301
 
-To get a detailed view of changes between revisions:
+To get a summary of changes between revisions:
 #{ command } -r 10210:10301
 #{ command } --revision 10210:10301
 
-To get a summary of difference between revisions:
-#{ command } --revision 10301 --summary
+To get a detailed view of changes between revisions:
+#{ command } --revision 10301 --details
   HELP
 end
 
