@@ -5,13 +5,8 @@ def svn_switch(args, repository)
   trunk  = repository[:trunk]
   branch = repository[:branch]
 
-  debug = (args.index '--debug') ? true : false
-
-  if args.length == 0 || args[0] == trunk
-    switch = trunk
-  else
-    switch = "#{ branch }/#{ args[0] }"
-  end
+  debug  = (args.index '--debug') ? true : false
+  switch = (args.length == 0 || args[0] == trunk) ? trunk : "#{ branch }/#{ args[0] }"
 
   print "Do you want to switch the working copy to #{ switch }? [yN] "
   result = STDIN.gets

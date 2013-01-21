@@ -5,15 +5,10 @@ def svn_merge(args, repository)
   trunk  = repository[:trunk]
   branch = repository[:branch]
 
-  debug = (args.index '--debug') ? true : false
+  debug  = (args.index '--debug') ? true : false
+  merge = (args.length == 0 || args[0] == trunk) ? trunk : "#{ branch }/#{ args[0] }"
 
-  if args.length == 0 || args[0] == trunk
-    switch = trunk
-  else
-    switch = "#{ branch }/#{ args[0] }"
-  end
-
-  print "Do you want to merge the working copy with #{ switch }? [yN] "
+  print "Do you want to merge the working copy with #{ merge }? [yN] "
   result = STDIN.gets
 
   unless %w(Y YES YEP YEAH YESSIR).index result.strip.upcase
@@ -21,12 +16,12 @@ def svn_merge(args, repository)
     exit
   end
 
-  head = "SVN merge with #{ switch }"
+  head = "SVN merge with #{ merge }"
   l    = '=' * (head.length + 2)
   s    = ' ' * (head.length + 2)
   puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+\n"
 
-  command =  "svn merge #{ base }#{ switch } .";
+  command = "svn merge #{ base }#{ merge } ."
   if debug
     puts command
   end
