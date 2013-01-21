@@ -126,7 +126,7 @@ def svn_diff(args, repository)
 
   command = "svn diff -x -w #{ path } #{ summary }"
 
-  head = 'SVN diff ' + (summary.empty? ? 'details' : 'summary') + " for #{ hpath }"
+  head = 'SVN diff ' + (summary.strip == '--summarize' ? 'summary' : 'details') + " for #{ hpath }"
   l    = '=' * (head.length + 2)
   s    = ' ' * (head.length + 2)
   puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+"

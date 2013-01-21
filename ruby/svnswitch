@@ -14,9 +14,9 @@ def svn_switch(args, repository)
   end
 
   print "Do you want to switch the working copy to #{ switch }? [yN] "
-  result = STDIN.gets
+  result = STDIN.gets.chomp
 
-  unless %w(Y YES YEP YEAH YESSIR).index result.strip.upcase
+  unless %w(Y YES YEP YEAH YESSIR).index result.upcase
     puts "Exiting without switching as requested"
     exit
   end
