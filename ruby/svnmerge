@@ -5,14 +5,14 @@ def svn_merge(args, repository)
   trunk  = repository[:trunk]
   branch = repository[:branch]
 
-  debug  = (args.index '--debug') ? true : false
+  debug = (args.index '--debug') ? true : false
   merge = (args.length == 0 || args[0] == trunk) ? trunk : "#{ branch }/#{ args[0] }"
 
   print "Do you want to merge the working copy with #{ merge }? [yN] "
   result = STDIN.gets
 
   unless %w(Y YES YEP YEAH YESSIR).index result.strip.upcase
-    puts "Exiting without merging as requested"
+    puts 'Exiting without merging as requested'
     exit
   end
 
@@ -22,14 +22,12 @@ def svn_merge(args, repository)
   puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+\n"
 
   command = "svn merge #{ base }#{ merge } ."
-  if debug
-    puts command
-  end
+  puts command if debug
 
   puts `#{ command } 2>&1`
 end
 
-def svn_merge_help command = 'svnmerge'
+def svn_merge_help(command = 'svnmerge')
   header = "#{ command } help"
   l      = '-' * header.length
   h      = "#{ header }\n#{ l }"

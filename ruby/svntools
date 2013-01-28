@@ -3,9 +3,7 @@
 $config = ''
 
 def get_config
-  unless $config.empty?
-    return $config
-  end
+  return $config unless $config.empty?
 
   require 'yaml'
 
@@ -14,21 +12,19 @@ def get_config
     file = file_name
   else
     file = File.expand_path "~/#{ file_name }"
-    unless File.exists? file
-      raise "Configuration file #{ file } not found"
-    end
+
+    raise "Configuration file #{ file } not found" unless File.exists? file
   end
 
   $config = YAML.load_file file
 end
 
-def parse_args args
+def parse_args(args)
   args            = args.dup
   repository_name = 'default'
   index           = args.index '--repository'
-  unless index
-    index = args.index '-p'
-  end
+
+  index = args.index '-p' unless index
 
   if index && args.length > index + 1
     repository_name = args[index + 1]
@@ -38,16 +34,12 @@ def parse_args args
   end
 
   config = get_config
-  unless config.has_key? 'repositories'
-    raise "Configuration missing repositories section"
-  end
+  raise 'Configuration missing repositories section' unless config.has_key? 'repositories'
 
   config = config['repositories']
   if config.has_key? 'default'
     default = config['default']
-    unless default.has_key? 'base'
-      raise "Default configuration missing 'base' key"
-    end
+    raise 'Default configuration missing \'base\' key' unless default.has_key? 'base'
 
     c_base   = default['base']
     c_trunk  = (default.has_key? 'trunk') ? default['trunk'] : 'trunk'
@@ -55,25 +47,15 @@ def parse_args args
   end
 
   if repository_name != 'default'
-    unless config.has_key? repository_name
-      raise "Configuration file missing repository '#{ repository_name }'"
-    end
+    raise "Configuration file missing repository '#{ repository_name }'" unless config.has_key? repository_name
 
     repository = config[repository_name]
-    if repository.has_key? 'base'
-      c_base = repository['base']
-    end
-    if repository.has_key? 'trunk'
-      c_trunk = repository['trunk']
-    end
-    if repository.has_key? 'branch'
-      c_branch = repository['branch']
-    end
+    c_base = repository['base'] if repository.has_key? 'base'
+    c_trunk = repository['trunk'] if repository.has_key? 'trunk'
+    c_branch = repository['branch'] if repository.has_key? 'branch'
   end
 
-  unless c_base[-1, 1] == '/'
-    c_base += '/'
-  end
+  c_base += '/' unless c_base[-1, 1] == '/'
 
   {:args => args, :repository => {:base => c_base, :trunk => c_trunk, :branch => c_branch}}
 end
@@ -114,14 +96,14 @@ if __FILE__ == $0
 
     if ARGV[0] == 'help'
       case ARGV[1]
-        when 'diff'
-          svn_diff_help 'svntools diff'
-        when 'switch'
-          svn_switch_help 'svntools switch'
-        when 'merge'
-          svn_merge_help 'svntools merge'
-        else
-          svn_tools_help
+      when 'diff'
+        svn_diff_help 'svntools diff'
+      when 'switch'
+        svn_switch_help 'svntools switch'
+      when 'merge'
+        svn_merge_help 'svntools merge'
+      else
+        svn_tools_help
       end
     elsif %w(diff switch merge).index ARGV[0]
       result     = parse_args ARGV
@@ -129,16 +111,19 @@ if __FILE__ == $0
       repository = result[:repository]
 
       case args.shift
-        when 'diff'
-          svn_diff(args, repository)
-        when 'merge'
-          svn_merge(args, repository)
-        when 'switch'
-          svn_switch(args, repository)
+      when 'diff'
+        svn_diff(args, repository)
+      when 'merge'
+        svn_merge(args, repository)
+      when 'switch'
+        svn_switch(args, repository)
+      else
+        # we'll never hit this
+        raise 'How the heck did you get here?'
       end
 
     else
-      raise "Invalid argument #{ ARGV[0] }. Execute " + __FILE__ + " without parameters to see accepted arguments"
+      raise "Invalid argument #{ ARGV[0] }. Execute " + __FILE__ + ' without parameters to see accepted arguments'
     end
     exit
   end

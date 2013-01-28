@@ -12,7 +12,7 @@ def svn_switch(args, repository)
   result = STDIN.gets
 
   unless %w(Y YES YEP YEAH YESSIR).index result.strip.upcase
-    puts "Exiting without switching as requested"
+    puts 'Exiting without switching as requested'
     exit
   end
 
@@ -22,14 +22,12 @@ def svn_switch(args, repository)
   puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+\n"
 
   command = "svn switch #{ base }#{ switch }"
-  if debug
-    puts command
-  end
+  puts command if debug
 
   puts `#{ command } 2>&1`
 end
 
-def svn_switch_help command = 'svnswitch'
+def svn_switch_help(command = 'svnswitch')
   header = "#{ command } help"
   l      = '-' * header.length
   h      = "#{ header }\n#{ l }"

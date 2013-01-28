@@ -18,9 +18,7 @@ def svn_diff(args, repository)
   trunk  = repository[:trunk]
   branch = repository[:branch]
 
-  if get_config.has_key? 'colorizer'
-    colorizer = get_config['colorizer']
-  end
+  colorizer = get_config['colorizer'] if get_config.has_key? 'colorizer'
 
   params = {'-o' => 'old', '-n' => 'new', '-s' => 'sub', '-f' => 'file', '-d' => 'folder', '-r' => 'revision', '-c' => 'colorizer'}
 
@@ -68,12 +66,15 @@ def svn_diff(args, repository)
         end
     end
 
-    param = ""
+    param = ''
   end
+
+  added_header   = 'Added'
+  deleted_header = 'Deleted'
 
   if revision.empty?
     if old.empty? || old == trunk
-      otag = ""
+      otag = ''
       old  = "#{ trunk }/"
     else
       otag = "#{ old }/"
@@ -81,18 +82,54 @@ def svn_diff(args, repository)
     end
 
     if new.empty? || new == trunk
-      ntag = ""
+      ntag = ''
       new  = "#{ trunk }/"
     else
       ntag = "#{ new }/"
       new  = "#{ branch }/"
     end
 
-    path  = "#{ base }#{ old }#{ otag }#{ page } #{ base }#{ new }#{ ntag }#{ page }"
+    o_path = "#{ old }#{ otag }#{ page }"
+    n_path ="#{ new }#{ ntag }#{ page }"
+
     hpath = "#{ old }#{ otag }#{ page } #{ new }#{ ntag }#{ page }"
+
+    #rev1 = svn_diff_last_log "#{ base }#{ o_path }"
+    #rev2 = svn_diff_last_log "#{ base }#{ n_path }"
+
+    path  = "#{ base }#{ o_path } #{ base }#{ n_path }"
+    hpath = "#{ o_path } #{ n_path }"
+
+    #if rev1[:revision] < rev2[:revision]
+    #  path  = "#{ base }#{ n_path } #{ base }#{ o_path }"
+    #  hpath = "#{ n_path } #{ o_path }"
+    #  added_header = "Deleted"
+    #  deleted_header = "Added"
+    #end
+    #
+    #head = "Last commit message by #{ rev1[:user] } on " + rev1[:date].strftime("%b %d, %Y %I:%M %p")
+    #l    = '-' * head.length
+    #
+    #puts "\n#{ head }\n#{ l }#{ rev1[:line] }\n"
   else
-    unless revision.include? ':'
-      revision = (revision.to_i - 1).to_s + ':' + revision
+
+    if revision.include? ':'
+      rev1, rev2 = revision.split(':')
+
+      if rev1.to_i > rev2.to_i
+        rev_old  = rev2
+        rev_new  = rev1
+        revision = rev_old + ':' + rev_new
+      else
+        rev_old = rev1
+        rev_new = rev2
+      end
+
+    else
+      rev_old = (revision.to_i - 1).to_s
+      rev_new = revision.to_s
+
+      revision = rev_old + ':' + revision
     end
 
     path  = "-r #{ revision } #{ base }"
@@ -114,16 +151,11 @@ def svn_diff(args, repository)
       end
     else
       output = `which #{ colorizer } 2>&1`
-      unless output.empty?
-        summary = "| #{ colorizer }"
-      end
+      summary = "| #{ colorizer }" unless output.empty?
     end
   end
 
-  if sumforce
-    summary = '--summarize'
-  end
-
+  summary = '--summarize' if sumforce
   command = "svn diff -x -w #{ path } #{ summary }"
 
   head = 'SVN diff ' + (summary.strip == '--summarize' ? 'summary' : 'details') + " for #{ hpath }"
@@ -131,34 +163,15 @@ def svn_diff(args, repository)
   s    = ' ' * (head.length + 2)
   puts "\n+#{ l }+\n|#{ s }|\n| #{ head } |\n|#{ s }|\n+#{ l }+"
 
-  if debug
-    puts command
-  end
+  puts command if debug
 
   unless revision.empty?
-    rev    = revision[revision.index(":")+1..-1]
-    output = `svn log -r #{ rev } #{ base }`
+    output = svn_diff_last_log "-r #{ rev_new } #{ base }"
 
-    @user = ''
-    @date = ''
-    @line = ''
-    output.each_line do |line|
-      if line[0, 1] == '-'
-        # do nothing
-      elsif line.include? "r#{ rev }"
-        trash, user, date, trash = line.split('|')
-
-        @user = user.strip
-        @date = DateTime.parse date[0..date.index('(')-1].strip
-      else
-        @line += line
-      end
-    end
-
-    head = "Last commit message by #@user on " + @date.strftime("%b %d, %Y %I:%M %p")
+    head = "Last commit message by #{ output[:user] } on " + output[:date].strftime("%b %d, %Y %I:%M %p")
     l    = '-' * head.length
 
-    puts "\n#{ head }\n#{ l }#@line\n"
+    puts "\n#{ head }\n#{ l }#{ output[:line] }\n"
   end
 
   output = `#{ command } 2>&1`
@@ -190,13 +203,8 @@ def svn_diff(args, repository)
         #do something?
     end
 
-    if prop == 'M'
-      pmodified << file
-    end
-
-    if maxlen < file.length
-      maxlen = file.length
-    end
+    pmodified << file if prop == 'M'
+    maxlen = file.length if maxlen < file.length
   end
 
   if added.empty? && modified.empty? && deleted.empty?
@@ -211,14 +219,12 @@ def svn_diff(args, repository)
 
     unless added.empty?
       added.sort!
-      header = "Missing from #{ old }#{ otag }"
-      puts "\n#{ header }\n#{ l }\n" + added.join("\n")
+      puts "\n#{ added_header }\n#{ l }\n" + added.join("\n")
     end
 
     unless deleted.empty?
       deleted.sort!
-      header = "Missing from #{ new }#{ ntag }"
-      puts "\n#{ header }\n#{ l }\n" + deleted.join("\n")
+      puts "\n#{ deleted_header }\n#{ l }\n" + deleted.join("\n")
     end
 
     unless pmodified.empty?
@@ -229,7 +235,32 @@ def svn_diff(args, repository)
   end
 end
 
-def svn_diff_help command = 'svndiff'
+def svn_diff_last_log(path)
+  output = `svn log -l 1 #{ path }`
+
+  @user     = ''
+  @date     = ''
+  @line     = ''
+  @revision = ''
+
+  output.each_line do |line|
+    next if line[0, 1] == '-'
+
+    if (line.start_with? 'r') && (line.include? '|')
+      revision, user, date, trash = line.split('|')
+
+      @revision = (revision.strip)[1..-1]
+      @user     = user.strip
+      @date     = DateTime.parse date[0..date.index('(')-1].strip
+    else
+      @line += line
+    end
+  end
+
+  {:revision => @revision, :user => @user, :date => @date, :line => @line}
+end
+
+def svn_diff_help(command = 'svndiff')
   header = "#{ command } help"
   l      = '-' * header.length
   h      = "#{ header }\n#{ l }"
