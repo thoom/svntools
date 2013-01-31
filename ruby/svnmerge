@@ -24,7 +24,10 @@ def svn_merge(args, repository)
   command = "svn merge #{ base }#{ merge } ."
   puts command if debug
 
-  puts `#{ command } 2>&1`
+  io = IO.popen "#{ command } 2>&1"
+  while (line = io.gets)
+    puts line
+  end
 end
 
 def svn_merge_help(command = 'svnmerge')

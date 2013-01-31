@@ -174,12 +174,17 @@ def svn_diff(args, repository)
     puts "\n#{ head }\n#{ l }#{ output[:line] }\n"
   end
 
-  output = `#{ command } 2>&1`
+
   if summary != '--summarize'
-    puts "\n" + output
+    io = IO.popen "#{ command } 2>&1"
+    puts "\n"
+    while (line = io.gets)
+      puts line
+    end
     exit
   end
 
+  output = `#{ command } 2>&1`
   added     = []
   deleted   = []
   modified  = []

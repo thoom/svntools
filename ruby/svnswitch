@@ -24,7 +24,10 @@ def svn_switch(args, repository)
   command = "svn switch #{ base }#{ switch }"
   puts command if debug
 
-  puts `#{ command } 2>&1`
+  io = IO.popen "#{ command } 2>&1"
+  while (line = io.gets)
+    puts line
+  end
 end
 
 def svn_switch_help(command = 'svnswitch')
