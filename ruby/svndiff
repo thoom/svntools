@@ -8,11 +8,13 @@ def svn_diff(args, repository)
   ntag      = ''
   page      = ''
   param     = ''
+  patch     = ''
   revision  = ''
-  details   = false
-  sumforce  = false
-  debug     = false
-  summary   = '--summarize'
+
+  debug    = false
+  details  = false
+  sumforce = false
+  summary  = '--summarize'
 
   base   = repository[:base]
   trunk  = repository[:trunk]
@@ -20,7 +22,7 @@ def svn_diff(args, repository)
 
   colorizer = get_config['colorizer'] if get_config.has_key? 'colorizer'
 
-  params = {'-o' => 'old', '-n' => 'new', '-s' => 'sub', '-f' => 'file', '-d' => 'folder', '-r' => 'revision', '-c' => 'colorizer'}
+  params = {'-o' => 'old', '-n' => 'new', '-s' => 'sub', '-f' => 'file', '-d' => 'folder', '-r' => 'revision', '-c' => 'colorizer', '-a' => 'patch'}
 
   args.each do |item|
     if params.has_key? item
@@ -35,35 +37,38 @@ def svn_diff(args, repository)
     end
 
     case item
-      when '--details'
+    when '--details'
+      details = true
+    when '--summary'
+      sumforce = true
+    when '--debug'
+      debug = true
+    else
+      case param
+      when 'colorizer'
+        colorizer = item
+      when 'file'
+        page    = item
         details = true
-      when '--summary'
-        sumforce = true
-      when '--debug'
-        debug = true
-      else
-        case param
-          when 'colorizer'
-            colorizer = item
-          when 'file'
-            page    = item
-            details = true
-          when 'folder'
-            page = item
-          when 'old'
-            old = item
-          when 'new'
-            new = item
-          when 'revision'
-            revision = item
-          when 'sub'
-            page = item
-            if item[-1, 1] != '/'
-              details = true
-            end
-          else
-            #do something?
+      when 'folder'
+        page = item
+      when 'patch'
+        details = true
+        patch   = item
+      when 'old'
+        old = item
+      when 'new'
+        new = item
+      when 'revision'
+        revision = item
+      when 'sub'
+        page = item
+        if item[-1, 1] != '/'
+          details = true
         end
+      else
+        #do something?
+      end
     end
 
     param = ''
@@ -94,25 +99,10 @@ def svn_diff(args, repository)
 
     hpath = "#{ old }#{ otag }#{ page } #{ new }#{ ntag }#{ page }"
 
-    #rev1 = svn_diff_last_log "#{ base }#{ o_path }"
-    #rev2 = svn_diff_last_log "#{ base }#{ n_path }"
-
     path  = "#{ base }#{ o_path } #{ base }#{ n_path }"
     hpath = "#{ o_path } #{ n_path }"
 
-    #if rev1[:revision] < rev2[:revision]
-    #  path  = "#{ base }#{ n_path } #{ base }#{ o_path }"
-    #  hpath = "#{ n_path } #{ o_path }"
-    #  added_header = "Deleted"
-    #  deleted_header = "Added"
-    #end
-    #
-    #head = "Last commit message by #{ rev1[:user] } on " + rev1[:date].strftime("%b %d, %Y %I:%M %p")
-    #l    = '-' * head.length
-    #
-    #puts "\n#{ head }\n#{ l }#{ rev1[:line] }\n"
   else
-
     if revision.include? ':'
       rev1, rev2 = revision.split(':')
 
@@ -139,24 +129,26 @@ def svn_diff(args, repository)
   if details == true && sumforce == false
     summary = ''
 
-    if colorizer.empty?
-      %w(diffc colordiff).each do |colorer|
-        output = `which #{ colorer } 2>&1`
-        if output.empty?
-          next
-        end
+    if patch.empty?
+      if colorizer.empty?
+        %w(diffc colordiff).each do |colorer|
+          output = `which #{ colorer } 2>&1`
+          if output.empty?
+            next
+          end
 
-        summary = "| #{ colorer }"
-        break
+          summary = "| #{ colorer }"
+          break
+        end
+      else
+        output = `which #{ colorizer } 2>&1`
+        summary = "| #{ colorizer }" unless output.empty?
       end
-    else
-      output = `which #{ colorizer } 2>&1`
-      summary = "| #{ colorizer }" unless output.empty?
     end
   end
 
   summary = '--summarize' if sumforce
-  command = "svn diff -x -w #{ path } #{ summary }"
+  command  = "svn diff -x -w #{ path } #{ summary }"
 
   head = 'SVN diff ' + (summary.strip == '--summarize' ? 'summary' : 'details') + " for #{ hpath }"
   l    = '=' * (head.length + 2)
@@ -178,13 +170,25 @@ def svn_diff(args, repository)
   if summary != '--summarize'
     io = IO.popen "#{ command } 2>&1"
     puts "\n"
+    if patch
+      file = File.open(patch, 'w')
+    end
+
     while (line = io.gets)
+      file.puts(line) if patch
+
       puts line
     end
+
+    if patch
+      file.close
+      puts "Patch file saved to #{ patch }"
+    end
+
     exit
   end
 
-  output = `#{ command } 2>&1`
+  output    = `#{ command } 2>&1`
   added     = []
   deleted   = []
   modified  = []
@@ -198,14 +202,14 @@ def svn_diff(args, repository)
     file = line[2..-1].strip.sub(base + old + otag, '')
 
     case type
-      when 'M'
-        modified << file
-      when 'D'
-        deleted << file
-      when 'A'
-        added << file
-      else
-        #do something?
+    when 'M'
+      modified << file
+    when 'D'
+      deleted << file
+    when 'A'
+      added << file
+    else
+      #do something?
     end
 
     pmodified << file if prop == 'M'
