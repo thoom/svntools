@@ -170,17 +170,17 @@ def svn_diff(args, repository)
   if summary != '--summarize'
     io = IO.popen "#{ command } 2>&1"
     puts "\n"
-    if patch
+    unless patch.empty?
       file = File.open(patch, 'w')
     end
 
     while (line = io.gets)
-      file.puts(line) if patch
+      file.puts(line) unless patch.empty?
 
       puts line
     end
 
-    if patch
+    unless patch.empty?
       file.close
       puts "Patch file saved to #{ patch }"
     end
