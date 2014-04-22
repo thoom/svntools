@@ -122,8 +122,8 @@ def svn_diff(args, repository)
       revision = rev_old + ':' + revision
     end
 
-    path  = "-r #{ revision } #{ base }"
-    hpath = "revision #{ revision }"
+    path  = "-r #{ revision } #{ base }#{ page }"
+    hpath = "revision #{ revision } #{ page }"
   end
 
   if details == true && sumforce == false
